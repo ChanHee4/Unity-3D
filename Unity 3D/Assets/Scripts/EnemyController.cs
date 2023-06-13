@@ -6,6 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class EnemyController : MonoBehaviour
 {
+
     public Node Target;
 
     private float Speed;
@@ -13,6 +14,12 @@ public class EnemyController : MonoBehaviour
 
     Vector3 LeftCheck;
     Vector3 RightCheck;
+
+
+    [Range(0.0f, 180.0f)]
+    public float Angle;
+
+    private bool move;
 
     private void Awake()
     {
@@ -33,47 +40,111 @@ public class EnemyController : MonoBehaviour
         float x = 2.5f;
         float z = 3.5f;
 
-
-
-
-
-
-
-
         LeftCheck = transform.position + (new Vector3(-x, 0.0f, z));
         RightCheck = transform.position + (new Vector3(x, 0.0f, z));
+
+        Angle = 45.0f;
+
+        move = false;
+       
     }
 
     private void Update()
     {
-        if(Target)
+        if (Target)
         {
             Vector3 Direction = (Target.transform.position - transform.position).normalized;
-            transform.position += Direction * Speed * Time.deltaTime;
 
-            RaycastHit hit;
+            transform.rotation = Quaternion.Lerp(
+                   transform.rotation,
+                   Quaternion.LookRotation(Direction),
+                   0.016f);
 
-            transform.LookAt(Target.transform);
-
-            Debug.DrawRay(transform.position, LeftCheck * 5.0f, Color.red);
-
-            if(Physics.Raycast(transform.position, LeftCheck, out hit, 5.0f))
+            if (move)
             {
-
+                transform.position += Direction * Speed * Time.deltaTime;
             }
-
-            Debug.DrawRay(transform.position, RightCheck * 5.0f, Color.red);
-
-            if (Physics.Raycast(transform.position, RightCheck, out hit, 5.0f))
+            else
             {
+                Vector3 targetDir = Target.transform.position - transform.position;
+                float angle = Vector3.Angle(targetDir, transform.forward);
 
+                if (Vector3.Angle(targetDir, transform.forward) < 0.1f)
+                    move = true;
             }
         }
     }
 
+    private void FixedUpdate()
+    {
+        float startAngle = (transform.eulerAngles.y - Angle);
+
+        RaycastHit hit;
+
+        Debug.DrawRay(transform.position,
+            new Vector3(
+                Mathf.Sin(startAngle * Mathf.Deg2Rad), 0.0f, Mathf.Cos(startAngle * Mathf.Deg2Rad)) * 2.5f,
+            Color.white);
+
+        if (Physics.Raycast(transform.position, LeftCheck, out hit, 5.0f))
+        {
+
+        }
+
+        Debug.DrawRay(transform.position,
+             new Vector3(
+                 Mathf.Sin((transform.eulerAngles.y + Angle) * Mathf.Deg2Rad), 0.0f, Mathf.Cos((transform.eulerAngles.y + Angle) * Mathf.Deg2Rad)) * 2.5f,
+             Color.green);
+
+        if (Physics.Raycast(transform.position, RightCheck, out hit, 5.0f))
+        {
+
+        }
+
+
+
+        //int Count = (int)((Angle * 2) / 5.0f);
+
+        for (float f = startAngle + 5.0f; f < (transform.eulerAngles.y + Angle - 5.0f); f += 5.0f)
+        {
+            Debug.DrawRay(transform.position,
+                new Vector3(
+                    Mathf.Sin(f * Mathf.Deg2Rad), 0.0f, Mathf.Cos(f * Mathf.Deg2Rad)) * 2.5f,
+                Color.red);
+        }
+    }
+
+    /*
+    void function()
+    {
+        if (move)
+            return;
+
+        move = true;
+        StartCoroutine(SetMove());
+    }
+
+    IEnumerator SetMove()
+    {
+        float time = 0.0f;
+
+        while (time < 1.0f)
+        {
+
+            time += Time.deltaTime;
+
+            yield return null;
+        }
+
+        move = false;
+    }
+     */
+    
     private void OnTriggerEnter(Collider other)
     {
-        if(Target.transform.name == other.transform.name)
+        move = false;
+
+        if (Target.transform.name == other.transform.name)
             Target = Target.Next;
     }
 }
